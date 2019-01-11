@@ -20,11 +20,51 @@ load(
 )
 
 _jar_extension = ".jar"
+_default_library_server = "twitter_scrooge_maven_server"
+_default_library_versions = {
+    "2.11": {
+        "libthrift": "0.8.0",
+        "util-logging": "18.6.0",
+        "scrooge-core": "18.6.0",
+        "scrooge-generator": "18.6.0",
+        "util-core": "18.6.0",
+    },
+    "2.12": {
+        "libthrift": "0.8.0",
+        "util-logging": "18.6.0",
+        "scrooge-core": "18.6.0",
+        "scrooge-generator": "18.6.0",
+        "util-core": "18.6.0",
+    },
+}
+_default_library_shas = {
+    "2.11": {
+        "libthrift": "2203b4df04943f4d52c53b9608cef60c08786ef2",
+        "util-logging": "73ddd61cedabd4dab82b30e6c52c1be6c692b063b8ba310d716ead9e3b4e9267",
+        "scrooge-core": "00351f73b555d61cfe7320ef3b1367a9641e694cfb8dfa8a733cfcf49df872e8",
+        "scrooge-generator": "0f0027e815e67985895a6f3caa137f02366ceeea4966498f34fb82cabb11dee6",
+        "util-core": "5336da4846dfc3db8ffe5ae076be1021828cfee35aa17bda9af461e203cf265c",
+    },
+    "2.12": {
+        "libthrift": "2203b4df04943f4d52c53b9608cef60c08786ef2",
+        "util-logging": "c0cba01705e9321b3444adcd4a9ce27c2acefd27e14c13b5aec2c318ce1b4fdf",
+        "scrooge-core": "02a6d7cf9fe8d872dfabd20298e4315d677748708e153d8b464fd5abac9a7430",
+        "scrooge-generator": "e7d5da1e3f0e494d3c81a26f44f3e3dc92d7efd757133de8c71758646fd5a833",
+        "util-core": "65bb92e70f95cbbfc640e54a5823a16154eac1a2631dc0211347e085aaa6ed0b",
+    },
+}
+_default_thrift_sha = "2203b4df04943f4d52c53b9608cef60c08786ef2"
 
 def twitter_scrooge(
         scala_version = _default_scala_version(),
+        library_server = _default_library_server,
+        library_version_overrides = {},
+        library_sha_overrides = {},
         maven_servers = ["http://central.maven.org/maven2"]):
     major_version = _extract_major_version(scala_version)
+
+    library_versions = dict(_default_library_versions[major_version], **library_version_overrides)
+    library_shas = dict(_default_library_shas[major_version], **library_sha_overrides)
 
     native.maven_server(
         name = "twitter_scrooge_maven_server",
@@ -33,8 +73,10 @@ def twitter_scrooge(
 
     native.maven_jar(
         name = "libthrift",
-        artifact = "org.apache.thrift:libthrift:0.8.0",
-        sha1 = "2203b4df04943f4d52c53b9608cef60c08786ef2",
+        artifact = "org.apache.thrift:libthrift:{libthrift_version}".format(
+            libthrift_version = library_versions["libthrift"],
+        ),
+        sha1 = library_shas["libthrift"],
         server = "twitter_scrooge_maven_server",
     )
     native.bind(
@@ -42,30 +84,13 @@ def twitter_scrooge(
         actual = "@libthrift//jar",
     )
 
-    scala_jar_shas = {
-        "2.11": {
-            "util_logging": "73ddd61cedabd4dab82b30e6c52c1be6c692b063b8ba310d716ead9e3b4e9267",
-            "scrooge_core": "00351f73b555d61cfe7320ef3b1367a9641e694cfb8dfa8a733cfcf49df872e8",
-            "scrooge_generator": "0f0027e815e67985895a6f3caa137f02366ceeea4966498f34fb82cabb11dee6",
-            "util_core": "5336da4846dfc3db8ffe5ae076be1021828cfee35aa17bda9af461e203cf265c",
-        },
-        "2.12": {
-            "util_logging": "c0cba01705e9321b3444adcd4a9ce27c2acefd27e14c13b5aec2c318ce1b4fdf",
-            "scrooge_core": "02a6d7cf9fe8d872dfabd20298e4315d677748708e153d8b464fd5abac9a7430",
-            "scrooge_generator": "e7d5da1e3f0e494d3c81a26f44f3e3dc92d7efd757133de8c71758646fd5a833",
-            "util_core": "65bb92e70f95cbbfc640e54a5823a16154eac1a2631dc0211347e085aaa6ed0b",
-        },
-    }
-
-    scala_version_jar_shas = scala_jar_shas[major_version]
-
     _scala_maven_import_external(
         name = "io_bazel_rules_scala_scrooge_core",
         artifact = _scala_mvn_artifact(
-            "com.twitter:scrooge-core:18.6.0",
+            "com.twitter:scrooge-core:{}".format(library_versions["scrooge-core"]),
             major_version,
         ),
-        jar_sha256 = scala_version_jar_shas["scrooge_core"],
+        jar_sha256 = library_shas["scrooge-core"],
         licenses = ["notice"],
         server_urls = maven_servers,
     )
@@ -78,10 +103,10 @@ def twitter_scrooge(
     _scala_maven_import_external(
         name = "io_bazel_rules_scala_scrooge_generator",
         artifact = _scala_mvn_artifact(
-            "com.twitter:scrooge-generator:18.6.0",
+            "com.twitter:scrooge-generator:{}".format(library_versions["scrooge-generator"]),
             major_version,
         ),
-        jar_sha256 = scala_version_jar_shas["scrooge_generator"],
+        jar_sha256 = library_shas["scrooge-generator"],
         licenses = ["notice"],
         server_urls = maven_servers,
     )
@@ -93,10 +118,10 @@ def twitter_scrooge(
     _scala_maven_import_external(
         name = "io_bazel_rules_scala_util_core",
         artifact = _scala_mvn_artifact(
-            "com.twitter:util-core:18.6.0",
+            "com.twitter:util-core:{}".format(library_versions["util-core"]),
             major_version,
         ),
-        jar_sha256 = scala_version_jar_shas["util_core"],
+        jar_sha256 = library_shas["util-core"],
         licenses = ["notice"],
         server_urls = maven_servers,
     )
@@ -108,10 +133,10 @@ def twitter_scrooge(
     _scala_maven_import_external(
         name = "io_bazel_rules_scala_util_logging",
         artifact = _scala_mvn_artifact(
-            "com.twitter:util-logging:18.6.0",
+            "com.twitter:util-logging:{}".format(library_versions["util-logging"]),
             major_version,
         ),
-        jar_sha256 = scala_version_jar_shas["util_logging"],
+        jar_sha256 = library_shas["util-logging"],
         licenses = ["notice"],
         server_urls = maven_servers,
     )
