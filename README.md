@@ -791,7 +791,7 @@ with the following `scala_toolchains()` parameters:
 ```py
 scala_toolchains(
     scala_proto = True,
-    scala_proto_options = [],
+    scala_proto_enable_all_options = True,
 )
 ```
 
@@ -1191,6 +1191,7 @@ under WORKSPACE](#6.5.0), with the maximum dependency versions specified in
 that section. While this may continue to work for some time, it is not
 officially supported.
 
+<<<<<<< HEAD
 ### `scala_proto_toolchain` changes and new `scalapb_toolchain` macro
 
 `scala_proto_toolchain` has a more flexible plugin configuration schema. The

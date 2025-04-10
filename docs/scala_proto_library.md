@@ -7,11 +7,6 @@ which adds a few dependencies needed for ScalaPB:
 scala_toolchains(
     # Other toolchains settings...
     scala_proto = True,
-    scala_proto_options = [
-        "grpc",
-        "flat_package",
-        "scala3_sources",
-    ],
 )
 
 scala_register_toolchains()
@@ -52,13 +47,9 @@ load(
 
 scala_proto_toolchain(
     name = "scala_proto_toolchain",
-    generators_opts = {
-        "scala": [
-            "grpc",
-            "flat_package",
-            "scala3_sources",
-        ]
-    },
+    with_grpc = False,
+    with_flat_package = False,
+    with_single_line_to_string = False,
     visibility = ["//visibility:public"],
 )
 
@@ -75,10 +66,12 @@ toolchain(
 | Attribute name                | Description                                           |
 | ----------------------------- | ----------------------------------------------------- |
 | name                          | `Name, required`<br/>A unique name for this toolchain. |
-| generators_opts                | `List of strings, optional`<br/>Additional protobuf options like 'grpc', 'flat_package' or 'scala3_sources'. |
+| with_grpc                     | `boolean, optional (default False)`<br/>Enables generation of grpc service bindings for services. |
+| with_flat_package             | `boolean, optional (default False)`<br/>When true, ScalaPB will not append the protofile base name to the package name. |
+| with_single_line_to_string    | `boolean, optional (default False)`<br/>Enables generation of toString() methods that use a single line format. |
 | blacklisted_protos            | `List of labels, optional`<br/>List of protobuf targets to exclude from recursive building. |
 | code_generator                | `Label, optional (has default)`<br/>Which code generator to use. A sensible default is provided. |
-| generators                    | `String dict, optional` |
+| named_generators              | `String dict, optional` |
 | extra_generator_dependencies  | `List of labels, optional` |
 | scalac                        | `Label, optional (has default)`<br/>Target for scalac. A sensible default is provided. |
 
@@ -96,6 +89,7 @@ scala_proto_deps_toolchain(
     visibility = ["//visibility:public"],
     dep_providers = [
         ":my_compile_deps",
+        ":my_grpc_deps",
     ],
 )
 
@@ -111,10 +105,17 @@ declare_deps_provider(
     deps = ["@dep1", "@dep2"],
     visibility = ["//visibility:public"],
 )
+
+declare_deps_provider(
+    name = "my_grpc_deps",
+    deps_id = "scalapb_grpc_deps",
+    deps = ["@dep3", "@dep4"],
+    visibility = ["//visibility:public"],
+)
 ```
 
 ### `scala_proto_deps_toolchain` Toolchain Attributes
 
 | Attribute name                | Description                                           |
 | ----------------------------- | ----------------------------------------------------- |
-| dep_providers                 | `List of labels, optional (has default)`<br/>allows injection of gRPC (deps_id - `scalapb_worker_deps`) and ScalaPB (deps_id `scalapb_compile_deps`) dependencies |
+| dep_providers                 | `List of labels, optional (has default)`<br/>allows injection of gRPC (deps_id - `scalapb_grpc_deps`) and ScalaPB (deps_id `scalapb_compile_deps`) dependencies |
